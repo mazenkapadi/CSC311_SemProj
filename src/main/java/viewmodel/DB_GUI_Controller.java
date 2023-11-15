@@ -2,6 +2,9 @@ package viewmodel;
 
 import dao.DbConnectivityClass;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -36,13 +39,26 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     MenuBar menuBar;
     @FXML
+    private MenuItem editItem;
+    @FXML
+    private MenuItem deleteItem;
+    @FXML
+    private MenuItem addItem;
+    @FXML
     private TableView<Person> tv;
     @FXML
     private TableColumn<Person, Integer> tv_id;
     @FXML
     private TableColumn<Person, String> tv_fn, tv_ln, tv_department, tv_major, tv_email;
+    @FXML
+    private ComboBox<Major> majorComboBox;
+
     private final DbConnectivityClass cnUtil = new DbConnectivityClass();
     private final ObservableList<Person> data = cnUtil.getData();
+
+    private final BooleanProperty isEditDisabled = new SimpleBooleanProperty(true);
+    private final BooleanProperty isDeleteDisabled = new SimpleBooleanProperty(true);
+    private final BooleanProperty isAddDisabled = new SimpleBooleanProperty(true);
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -54,6 +70,43 @@ public class DB_GUI_Controller implements Initializable {
             tv_major.setCellValueFactory(new PropertyValueFactory<>("major"));
             tv_email.setCellValueFactory(new PropertyValueFactory<>("email"));
             tv.setItems(data);
+            tv.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+                if (newSelection == null) {
+                    isEditDisabled.set(true);
+                    isDeleteDisabled.set(true);
+                } else {
+                    isEditDisabled.set(false);
+                    isDeleteDisabled.set(false);
+                }
+            });
+
+            tv.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 1) {
+                    tv.getSelectionModel().clearSelection();
+                }
+            });
+
+            isAddDisabled.bind(Bindings.createBooleanBinding(() ->
+                            first_name.getText().isEmpty() ||
+                                    last_name.getText().isEmpty() ||
+                                    department.getText().isEmpty() ||
+                                    majorComboBox.getValue() == null ||
+                                    email.getText().isEmpty() ||
+                                    imageURL.getText().isEmpty(),
+                    first_name.textProperty(),
+                    last_name.textProperty(),
+                    department.textProperty(),
+                    majorComboBox.valueProperty(),
+                    email.textProperty(),
+                    imageURL.textProperty())
+            );
+
+            editItem.disableProperty().bind(isEditDisabled);
+            deleteItem.disableProperty().bind(isDeleteDisabled);
+            addItem.disableProperty().bind(isAddDisabled);
+            majorComboBox.setItems(FXCollections.observableArrayList(Major.values()));
+            majorComboBox.getSelectionModel().selectFirst();
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -61,23 +114,67 @@ public class DB_GUI_Controller implements Initializable {
 
     @FXML
     protected void addNewRecord() {
-
-            Person p = new Person(first_name.getText(), last_name.getText(), department.getText(),
-                    major.getText(), email.getText(), imageURL.getText());
+        if (validateForm()) {
+            Person p = new Person(
+                    first_name.getText(),
+                    last_name.getText(),
+                    department.getText(),
+                    majorComboBox.getValue().getDisplayName(), // use majorComboBox instead of major
+                    email.getText(),
+                    imageURL.getText()
+            );
             cnUtil.insertUser(p);
             cnUtil.retrieveId(p);
             p.setId(cnUtil.retrieveId(p));
             data.add(p);
             clearForm();
-
+        }
     }
+
+    private boolean validateForm() {
+        if (first_name.getText().isEmpty() || last_name.getText().isEmpty() ||
+                department.getText().isEmpty() || majorComboBox.getValue() == null ||
+                email.getText().isEmpty() || imageURL.getText().isEmpty()) {
+            // Display an alert or handle validation error as needed
+            showAlert("Please fill in all fields.");
+            return false;
+        }
+
+        if (!first_name.getText().matches("^[A-Za-z]{2,25}$")) {
+            showAlert("Invalid first name. It should contain 2 to 25 alphabetical characters.");
+            return false;
+        }
+
+        if (!last_name.getText().matches("^[A-Za-z]{2,25}$")) {
+            showAlert("Invalid last name. It should contain 2 to 25 alphabetical characters.");
+            return false;
+        }
+
+        if (!email.getText().endsWith("@farmingdale.edu")) {
+            showAlert("Invalid email. It should end with @farmingdale.edu.");
+            return false;
+        }
+
+        // Additional validation checks if needed
+
+        return true;
+    }
+
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Form Validation Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
 
     @FXML
     protected void clearForm() {
         first_name.setText("");
         last_name.setText("");
         department.setText("");
-        major.setText("");
+        majorComboBox.setValue(null);
         email.setText("");
         imageURL.setText("");
     }
@@ -114,17 +211,30 @@ public class DB_GUI_Controller implements Initializable {
         }
     }
 
+
     @FXML
     protected void editRecord() {
         Person p = tv.getSelectionModel().getSelectedItem();
-        int index = data.indexOf(p);
-        Person p2 = new Person(index + 1, first_name.getText(), last_name.getText(), department.getText(),
-                major.getText(), email.getText(),  imageURL.getText());
-        cnUtil.editUser(p.getId(), p2);
-        data.remove(p);
-        data.add(index, p2);
-        tv.getSelectionModel().select(index);
+        if (p != null) {
+            int index = data.indexOf(p);
+
+            Person p2 = new Person(
+                    p.getId(),
+                    first_name.getText(),
+                    last_name.getText(),
+                    department.getText(),
+                    majorComboBox.getValue().getDisplayName(),  // Use ComboBox instead of TextField
+                    email.getText(),
+                    imageURL.getText()
+            );
+
+            cnUtil.editUser(p.getId(), p2);
+            data.remove(p);
+            data.add(index, p2);
+            tv.getSelectionModel().select(index);
+        }
     }
+
 
     @FXML
     protected void deleteRecord() {
@@ -214,7 +324,23 @@ public class DB_GUI_Controller implements Initializable {
         });
     }
 
-    private static enum Major {Business, CSC, CPIS}
+    public enum Major {
+        CS("Computer Science"),
+        CPIS("Computer Information Systems"),
+        ENGLISH("English");
+
+        private final String displayName;
+
+        Major(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
+
+
 
     private static class Results {
 

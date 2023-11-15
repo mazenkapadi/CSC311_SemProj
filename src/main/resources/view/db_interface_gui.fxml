@@ -16,6 +16,9 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
 <AnchorPane fx:id="anchorPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="920.0" styleClass="anchor_pane" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="viewmodel.DB_GUI_Controller">
     <children>
         <BorderPane fx:id="borderPane" layoutX="-2.0" layoutY="-3.0" prefHeight="597.0" prefWidth="908.0">
@@ -34,6 +37,7 @@
                      <items>
                         <MenuItem fx:id="editItem" mnemonicParsing="true" styleClass="menu_items" text="_Edit       Ctrl+E" />
                         <MenuItem fx:id="deleteItem" mnemonicParsing="true" styleClass="menu_items" text="_Delete        Ctrl+D" />
+                         <MenuItem fx:id="addItem" mnemonicParsing="false" styleClass="menu_items" text="Add" />
                         <MenuItem fx:id="ClearItem" mnemonicParsing="false" styleClass="menu_items" text="Clea_r        Ctrl+R" />
                         <MenuItem fx:id="CopyItem" mnemonicParsing="false" styleClass="menu_items" text="_Copy       Ctrl+C" />
                      </items>
@@ -89,11 +93,19 @@
                                 <Insets left="10.0" right="10.0" top="5.0" />
                             </VBox.margin>
                         </TextField>
-                        <TextField fx:id="major" promptText="Major" styleClass="text_field">
+                        <ComboBox fx:id="majorComboBox" promptText="Major" styleClass="text_field">
                             <VBox.margin>
                                 <Insets left="10.0" right="10.0" top="5.0" />
                             </VBox.margin>
-                        </TextField>
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <String fx:value="Business" />
+                                    <String fx:value="CSC" />
+                                    <String fx:value="CPIS" />
+                                </FXCollections>
+                            </items>
+                        </ComboBox>
+
                         <TextField fx:id="email" promptText="Email" styleClass="text_field">
                             <VBox.margin>
                                 <Insets left="10.0" right="10.0" top="5.0" />
