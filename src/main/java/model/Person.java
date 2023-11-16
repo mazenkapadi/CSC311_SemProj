@@ -12,16 +12,7 @@ public class Person {
     public Person() {
     }
 
-    public Person(String firstName, String lastName, String department, String major, String email,  String imageURL) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.department = department;
-        this.major = major;
-        this.email = email;
-        this.imageURL = imageURL;
-    }
-
-    public Person(Integer id, String firstName, String lastName, String department, String major, String email,  String imageURL) {
+    public Person(Integer id, String firstName, String lastName, String department, String major, String email, String imageURL) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -47,7 +38,6 @@ public class Person {
         this.id = id;
     }
 
-
     public String getFirstName() {
         return firstName;
     }
@@ -55,7 +45,6 @@ public class Person {
     public void setFirstName(String firstName) {
         this.firstName = firstName;
     }
-
 
     public String getLastName() {
         return lastName;
@@ -65,7 +54,6 @@ public class Person {
         this.lastName = lastName;
     }
 
-
     public String getMajor() {
         return major;
     }
@@ -73,7 +61,6 @@ public class Person {
     public void setMajor(String major) {
         this.major = major;
     }
-
 
     public String getDepartment() {
         return department;
@@ -102,5 +89,4 @@ public class Person {
                 ", email='" + email + '\'' +
                 '}';
     }
-
 }

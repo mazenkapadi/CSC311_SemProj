@@ -123,3 +123,8 @@
 	-fx-background-radius: 2em;
 
 }
+
+.status_label {
+    -fx-text-fill: green; /* Set the text color for success messages */
+}
+

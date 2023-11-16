@@ -1,6 +1,9 @@
 package viewmodel;
 
+import com.opencsv.exceptions.CsvValidationException;
 import dao.DbConnectivityClass;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
@@ -11,6 +14,8 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -18,15 +23,24 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import model.Person;
 import service.MyLogger;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import javafx.stage.FileChooser;
 
-import java.io.File;
+import java.io.*;
 import java.net.URL;
+import java.sql.Time;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -52,6 +66,8 @@ public class DB_GUI_Controller implements Initializable {
     private TableColumn<Person, String> tv_fn, tv_ln, tv_department, tv_major, tv_email;
     @FXML
     private ComboBox<Major> majorComboBox;
+    @FXML
+    private Label statusLabel;
 
     private final DbConnectivityClass cnUtil = new DbConnectivityClass();
     private final ObservableList<Person> data = cnUtil.getData();
@@ -116,20 +132,26 @@ public class DB_GUI_Controller implements Initializable {
     protected void addNewRecord() {
         if (validateForm()) {
             Person p = new Person(
+                    null,  // You can set the ID to null, and it will be generated automatically
                     first_name.getText(),
                     last_name.getText(),
                     department.getText(),
-                    majorComboBox.getValue().getDisplayName(), // use majorComboBox instead of major
+                    majorComboBox.getValue().getDisplayName(),
                     email.getText(),
                     imageURL.getText()
             );
             cnUtil.insertUser(p);
+            // Retrieve ID after insertion
             cnUtil.retrieveId(p);
             p.setId(cnUtil.retrieveId(p));
             data.add(p);
             clearForm();
+            setStatusMessage("New Record Successfully Added");
         }
     }
+
+
+
 
     private boolean validateForm() {
         if (first_name.getText().isEmpty() || last_name.getText().isEmpty() ||
@@ -160,6 +182,99 @@ public class DB_GUI_Controller implements Initializable {
         return true;
     }
 
+    private void setStatusMessage(String message) {
+        statusLabel.setText(message);
+        HBox.setHgrow(statusLabel, Priority.ALWAYS); // Use the whole width
+        HBox.setMargin(statusLabel, new Insets(0, 0, 0, 10)); // Adjust margin if needed
+
+        Timeline timeline = new Timeline(new KeyFrame(
+                Duration.seconds(5),
+                event -> statusLabel.setText("")));
+
+        timeline.play();
+    }
+    @FXML
+    private void importCsv() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = fileChooser.showOpenDialog(null);
+
+        if (file != null) {
+            try (CSVReader reader = new CSVReader(new FileReader(file))) {
+                List<Person> importedData = new ArrayList<>();
+
+                // Read CSV header (if present)
+                String[] header = reader.readNext();
+
+                // Assuming CSV format: ID,FirstName,LastName,Department,Major,Email
+                if (header != null && header.length == 6) {
+                    String[] nextLine;
+                    while ((nextLine = reader.readNext()) != null) {
+                        Person person = new Person(
+                                null,  // You can set the ID to null, and it will be generated automatically
+                                nextLine[1],
+                                nextLine[2],
+                                nextLine[3],
+                                nextLine[4],
+                                nextLine[5],
+                                ""
+                        );
+                        importedData.add(person);
+                    }
+
+                    // Update TableView with imported data
+                    data.clear();
+                    data.addAll(importedData);
+                    setStatusMessage("CSV Import Successful");
+                } else {
+                    showAlert("Invalid CSV file format. Please make sure the file has the correct header.");
+                }
+
+            } catch (IOException | NumberFormatException e) {
+                e.printStackTrace();
+                showAlert("Error importing CSV file.");
+            } catch (CsvValidationException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
+    @FXML
+    private void exportCsv() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            try (CSVWriter writer = new CSVWriter(new FileWriter(file))) {
+                // Write CSV header
+                String[] header = {"ID", "FirstName", "LastName", "Department", "Major", "Email"};
+                writer.writeNext(header);
+
+                // Write data to CSV
+                for (Person person : data) {
+                    String[] rowData = {
+                            String.valueOf(person.getId()),
+                            person.getFirstName(),
+                            person.getLastName(),
+                            person.getDepartment(),
+                            person.getMajor(),
+                            person.getEmail()
+                    };
+                    writer.writeNext(rowData);
+                }
+
+                setStatusMessage("CSV Export Successful");
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                showAlert("Error exporting CSV file.");
+            }
+        }
+    }
+
+
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Form Validation Error");
@@ -167,6 +282,7 @@ public class DB_GUI_Controller implements Initializable {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
 
 
     @FXML
