@@ -42,6 +42,7 @@ public class MainApplication extends Application {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     public void changeScene() {
