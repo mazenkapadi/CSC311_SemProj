@@ -58,6 +58,7 @@
                             <items>
                                 <MenuItem fx:id="importCsvItem" mnemonicParsing="false" onAction="#importCsv" styleClass="menu_items" text="Import CSV" />
                                 <MenuItem fx:id="exportCsvItem" mnemonicParsing="false" onAction="#exportCsv" styleClass="menu_items" text="Export CSV" />
+                                <MenuItem fx:id="exportPdfItem" mnemonicParsing="false" onAction="#exportPdf" text="Export PDF" />
                             </items>
                         </Menu>
                     </menus>
@@ -153,7 +154,7 @@
                 </VBox>
          </right>
          <center>
-                <TableView fx:id="tv" onMouseClicked="#selectedItemTV" prefHeight="539.0" prefWidth="566.0" styleClass="table_view" BorderPane.alignment="CENTER">
+                <TableView fx:id="tv" onMouseClicked="#selectedItemTV" prefHeight="539.0" prefWidth="566.0" styleClass="table_view" BorderPane.alignment="CENTER" editable="true">
                     <columns>
                         <TableColumn fx:id="tv_id" prefWidth="42.0" styleClass="table_columns" text="ID" />
                         <TableColumn fx:id="tv_fn" prefWidth="117.0" styleClass="table_columns" text="First Name" />

@@ -39,6 +39,13 @@ public class UserSession {
         userPreferences.put("PRIVILEGES", privileges);
     }
 
+    // Set user credentials during sign-in
+    public synchronized void setCredentials(String userName, String password) {
+        this.userName = userName;
+        this.password = password;
+        savePreferences();
+    }
+
     public synchronized String getUserName() {
         return this.userName;
     }
@@ -63,7 +70,7 @@ public class UserSession {
     public synchronized String toString() {
         return "UserSession{" +
                 "userName='" + this.userName + '\'' +
-                ", privileges=" + this.privileges +
+                ", privileges='" + this.privileges + '\'' +
                 '}';
     }
 }

@@ -19,7 +19,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -29,11 +31,22 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.util.converter.IntegerStringConverter;
 import model.Person;
 import service.MyLogger;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import javafx.stage.FileChooser;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import java.io.*;
 import java.net.URL;
@@ -68,6 +81,8 @@ public class DB_GUI_Controller implements Initializable {
     private ComboBox<Major> majorComboBox;
     @FXML
     private Label statusLabel;
+    @FXML
+    private MenuItem exportPdfItem;
 
     private final DbConnectivityClass cnUtil = new DbConnectivityClass();
     private final ObservableList<Person> data = cnUtil.getData();
@@ -122,6 +137,18 @@ public class DB_GUI_Controller implements Initializable {
             addItem.disableProperty().bind(isAddDisabled);
             majorComboBox.setItems(FXCollections.observableArrayList(Major.values()));
             majorComboBox.getSelectionModel().selectFirst();
+
+            tv.setRowFactory(tv -> {
+                TableRow<Person> row = new TableRow<>();
+                row.setOnMouseClicked(event -> {
+                    if (event.getClickCount() == 1 && !row.isEmpty()) {
+                        addNewRowOnClick(row);
+                    }
+                });
+                return row;
+            });
+
+            enableEditingWithinRow();
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -193,6 +220,72 @@ public class DB_GUI_Controller implements Initializable {
 
         timeline.play();
     }
+
+    private void addNewRowOnClick(TableRow<Person> row) {
+        if (row.isEmpty()) {
+            // The row is empty, add a new record
+            clearForm(); // Clear the form before adding a new record
+            isEditDisabled.set(true);
+            isDeleteDisabled.set(true);
+        } else {
+            // The row is not empty, populate the fields with the selected row's data
+            Person selectedPerson = row.getItem();
+            first_name.setText(selectedPerson.getFirstName());
+            last_name.setText(selectedPerson.getLastName());
+            department.setText(selectedPerson.getDepartment());
+            majorComboBox.setValue(Major.valueOf(selectedPerson.getMajor()));
+            email.setText(selectedPerson.getEmail());
+            imageURL.setText(selectedPerson.getImageURL());
+
+            isEditDisabled.set(false);
+            isDeleteDisabled.set(false);
+        }
+    }
+
+    private void enableEditingWithinRow() {
+        tv.setEditable(true);
+
+        tv_id.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
+
+        tv_fn.setCellFactory(TextFieldTableCell.forTableColumn());
+        tv_fn.setOnEditCommit(this::updateCell);
+
+        tv_ln.setCellFactory(TextFieldTableCell.forTableColumn());
+        tv_ln.setOnEditCommit(this::updateCell);
+
+        tv_department.setCellFactory(TextFieldTableCell.forTableColumn());
+        tv_department.setOnEditCommit(this::updateCell);
+
+        tv_email.setCellFactory(TextFieldTableCell.forTableColumn());
+        tv_email.setOnEditCommit(this::updateCell);
+    }
+
+    private void updateCell(TableColumn.CellEditEvent<Person, String> event) {
+        Person person = tv.getSelectionModel().getSelectedItem();
+        if (person != null) {
+            // Update the corresponding property based on the column
+            if (event.getTableColumn() == tv_fn) {
+                person.setFirstName(event.getNewValue());
+            } else if (event.getTableColumn() == tv_ln) {
+                person.setLastName(event.getNewValue());
+            } else if (event.getTableColumn() == tv_department) {
+                person.setDepartment(event.getNewValue());
+            } else if (event.getTableColumn() == tv_major) {
+                person.setMajor(event.getNewValue());
+            } else if (event.getTableColumn() == tv_email) {
+                person.setEmail(event.getNewValue());
+            }
+
+            // Save changes to the database
+            cnUtil.editUser(person.getId(), person);
+
+            // You may need to adjust your data model or update the database accordingly
+            // For simplicity, assume the Person class has appropriate setters
+            // and update the corresponding property based on the edited column
+        }
+    }
+
+
     @FXML
     private void importCsv() {
         FileChooser fileChooser = new FileChooser();
@@ -272,7 +365,63 @@ public class DB_GUI_Controller implements Initializable {
                 showAlert("Error exporting CSV file.");
             }
         }
+    }@FXML
+    private void exportPdf() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF Files", "*.pdf"));
+        File file = fileChooser.showSaveDialog(null);
+
+        if (file != null) {
+            try {
+                generatePdf(file);
+                setStatusMessage("PDF Export Successful");
+            } catch (IOException e) {
+                e.printStackTrace();
+                showAlert("Error exporting PDF file.");
+            }
+        }
     }
+
+    private void generatePdf(File file) throws IOException {
+        PDDocument document = new PDDocument();
+        PDPage page = new PDPage();
+        document.addPage(page);
+
+        try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
+            contentStream.beginText();
+            contentStream.newLineAtOffset(50, 700);
+            contentStream.showText("Student Report by Major");
+            contentStream.newLineAtOffset(0, -20);
+            contentStream.showText("--------------------------------------------------");
+
+            Map<String, Integer> majorCounts = countStudentsByMajor();
+
+            for (Map.Entry<String, Integer> entry : majorCounts.entrySet()) {
+                contentStream.newLineAtOffset(0, -15);
+                contentStream.showText(entry.getKey() + ": " + entry.getValue() + " students");
+            }
+
+            contentStream.endText();
+        }
+
+        document.save(file);
+        document.close();
+    }
+
+    private Map<String, Integer> countStudentsByMajor() {
+        Map<String, Integer> majorCounts = new HashMap<>();
+
+        for (Person person : data) {
+            String major = person.getMajor();
+            majorCounts.put(major, majorCounts.getOrDefault(major, 0) + 1);
+        }
+
+        return majorCounts;
+    }
+
+
+
 
 
     private void showAlert(String message) {
@@ -350,6 +499,8 @@ public class DB_GUI_Controller implements Initializable {
             tv.getSelectionModel().select(index);
         }
     }
+
+
 
 
     @FXML
