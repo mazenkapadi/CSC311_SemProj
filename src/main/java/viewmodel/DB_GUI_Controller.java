@@ -15,11 +15,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.image.Image;
@@ -32,11 +30,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.converter.IntegerStringConverter;
-import model.Person;
+import model.Student;
 import service.MyLogger;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
-import javafx.stage.FileChooser;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -50,8 +47,6 @@ import java.util.Map;
 
 import java.io.*;
 import java.net.URL;
-import java.sql.Time;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,7 +55,7 @@ import java.util.ResourceBundle;
 public class DB_GUI_Controller implements Initializable {
 
     @FXML
-    TextField first_name, last_name, department, major, email, imageURL;
+    TextField first_name, last_name, major, email, year;
     @FXML
     ImageView img_view;
     @FXML
@@ -72,11 +67,11 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     private MenuItem addItem;
     @FXML
-    private TableView<Person> tv;
+    private TableView<Student> tv;
     @FXML
-    private TableColumn<Person, Integer> tv_id;
+    private TableColumn<Student, Integer> tv_id;
     @FXML
-    private TableColumn<Person, String> tv_fn, tv_ln, tv_department, tv_major, tv_email;
+    private TableColumn<Student, String> tv_fn, tv_ln, tv_year, tv_major, tv_email;
     @FXML
     private ComboBox<Major> majorComboBox;
     @FXML
@@ -85,19 +80,19 @@ public class DB_GUI_Controller implements Initializable {
     private MenuItem exportPdfItem;
 
     private final DbConnectivityClass cnUtil = new DbConnectivityClass();
-    private final ObservableList<Person> data = cnUtil.getData();
+    private final ObservableList<Student> data = cnUtil.getData();
 
     private final BooleanProperty isEditDisabled = new SimpleBooleanProperty(true);
     private final BooleanProperty isDeleteDisabled = new SimpleBooleanProperty(true);
     private final BooleanProperty isAddDisabled = new SimpleBooleanProperty(true);
 
     @Override
-    public void initialize(URL url, ResourceBundle resourceBundle) {
+    public void initialize(URL ul, ResourceBundle resourceBundle) {
         try {
             tv_id.setCellValueFactory(new PropertyValueFactory<>("id"));
             tv_fn.setCellValueFactory(new PropertyValueFactory<>("firstName"));
             tv_ln.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-            tv_department.setCellValueFactory(new PropertyValueFactory<>("department"));
+            tv_year.setCellValueFactory(new PropertyValueFactory<>("year"));
             tv_major.setCellValueFactory(new PropertyValueFactory<>("major"));
             tv_email.setCellValueFactory(new PropertyValueFactory<>("email"));
             tv.setItems(data);
@@ -120,16 +115,14 @@ public class DB_GUI_Controller implements Initializable {
             isAddDisabled.bind(Bindings.createBooleanBinding(() ->
                             first_name.getText().isEmpty() ||
                                     last_name.getText().isEmpty() ||
-                                    department.getText().isEmpty() ||
                                     majorComboBox.getValue() == null ||
                                     email.getText().isEmpty() ||
-                                    imageURL.getText().isEmpty(),
+                                    year.getText().isEmpty(),
                     first_name.textProperty(),
                     last_name.textProperty(),
-                    department.textProperty(),
                     majorComboBox.valueProperty(),
                     email.textProperty(),
-                    imageURL.textProperty())
+                    year.textProperty())
             );
 
             editItem.disableProperty().bind(isEditDisabled);
@@ -139,7 +132,7 @@ public class DB_GUI_Controller implements Initializable {
             majorComboBox.getSelectionModel().selectFirst();
 
             tv.setRowFactory(tv -> {
-                TableRow<Person> row = new TableRow<>();
+                TableRow<Student> row = new TableRow<>();
                 row.setOnMouseClicked(event -> {
                     if (event.getClickCount() == 1 && !row.isEmpty()) {
                         addNewRowOnClick(row);
@@ -158,14 +151,13 @@ public class DB_GUI_Controller implements Initializable {
     @FXML
     protected void addNewRecord() {
         if (validateForm()) {
-            Person p = new Person(
+            Student p = new Student(
                     null,  // You can set the ID to null, and it will be generated automatically
                     first_name.getText(),
                     last_name.getText(),
-                    department.getText(),
                     majorComboBox.getValue().getDisplayName(),
                     email.getText(),
-                    imageURL.getText()
+                    year.getText()
             );
             cnUtil.insertUser(p);
             // Retrieve ID after insertion
@@ -182,8 +174,8 @@ public class DB_GUI_Controller implements Initializable {
 
     private boolean validateForm() {
         if (first_name.getText().isEmpty() || last_name.getText().isEmpty() ||
-                department.getText().isEmpty() || majorComboBox.getValue() == null ||
-                email.getText().isEmpty() || imageURL.getText().isEmpty()) {
+                majorComboBox.getValue() == null ||
+                email.getText().isEmpty() || year.getText().isEmpty()) {
             // Display an alert or handle validation error as needed
             showAlert("Please fill in all fields.");
             return false;
@@ -221,7 +213,7 @@ public class DB_GUI_Controller implements Initializable {
         timeline.play();
     }
 
-    private void addNewRowOnClick(TableRow<Person> row) {
+    private void addNewRowOnClick(TableRow<Student> row) {
         if (row.isEmpty()) {
             // The row is empty, add a new record
             clearForm(); // Clear the form before adding a new record
@@ -229,13 +221,11 @@ public class DB_GUI_Controller implements Initializable {
             isDeleteDisabled.set(true);
         } else {
             // The row is not empty, populate the fields with the selected row's data
-            Person selectedPerson = row.getItem();
-            first_name.setText(selectedPerson.getFirstName());
-            last_name.setText(selectedPerson.getLastName());
-            department.setText(selectedPerson.getDepartment());
-            majorComboBox.setValue(Major.valueOf(selectedPerson.getMajor()));
-            email.setText(selectedPerson.getEmail());
-            imageURL.setText(selectedPerson.getImageURL());
+            Student selectedStudent = row.getItem();
+            first_name.setText(selectedStudent.getFirstName());
+            last_name.setText(selectedStudent.getLastName());
+            year.setText(selectedStudent.getYear());
+            email.setText(selectedStudent.getEmail());
 
             isEditDisabled.set(false);
             isDeleteDisabled.set(false);
@@ -253,31 +243,29 @@ public class DB_GUI_Controller implements Initializable {
         tv_ln.setCellFactory(TextFieldTableCell.forTableColumn());
         tv_ln.setOnEditCommit(this::updateCell);
 
-        tv_department.setCellFactory(TextFieldTableCell.forTableColumn());
-        tv_department.setOnEditCommit(this::updateCell);
+        tv_year.setCellFactory(TextFieldTableCell.forTableColumn());
+        tv_year.setOnEditCommit(this::updateCell);
 
         tv_email.setCellFactory(TextFieldTableCell.forTableColumn());
         tv_email.setOnEditCommit(this::updateCell);
     }
 
-    private void updateCell(TableColumn.CellEditEvent<Person, String> event) {
-        Person person = tv.getSelectionModel().getSelectedItem();
-        if (person != null) {
+    private void updateCell(TableColumn.CellEditEvent<Student, String> event) {
+        Student student = tv.getSelectionModel().getSelectedItem();
+        if (student != null) {
             // Update the corresponding property based on the column
             if (event.getTableColumn() == tv_fn) {
-                person.setFirstName(event.getNewValue());
+                student.setFirstName(event.getNewValue());
             } else if (event.getTableColumn() == tv_ln) {
-                person.setLastName(event.getNewValue());
-            } else if (event.getTableColumn() == tv_department) {
-                person.setDepartment(event.getNewValue());
-            } else if (event.getTableColumn() == tv_major) {
-                person.setMajor(event.getNewValue());
+                student.setLastName(event.getNewValue());
+            }  else if (event.getTableColumn() == tv_major) {
+                student.setMajor(event.getNewValue());
             } else if (event.getTableColumn() == tv_email) {
-                person.setEmail(event.getNewValue());
+                student.setEmail(event.getNewValue());
             }
 
             // Save changes to the database
-            cnUtil.editUser(person.getId(), person);
+            cnUtil.editUser(student.getId(), student);
 
             // You may need to adjust your data model or update the database accordingly
             // For simplicity, assume the Person class has appropriate setters
@@ -294,25 +282,23 @@ public class DB_GUI_Controller implements Initializable {
 
         if (file != null) {
             try (CSVReader reader = new CSVReader(new FileReader(file))) {
-                List<Person> importedData = new ArrayList<>();
+                List<Student> importedData = new ArrayList<>();
 
                 // Read CSV header (if present)
                 String[] header = reader.readNext();
 
-                // Assuming CSV format: ID,FirstName,LastName,Department,Major,Email
+                // Assuming CSV format: ID,FirstName,LastName,Year,Major,Email
                 if (header != null && header.length == 6) {
                     String[] nextLine;
                     while ((nextLine = reader.readNext()) != null) {
-                        Person person = new Person(
+                        Student student = new Student(
                                 null,  // You can set the ID to null, and it will be generated automatically
                                 nextLine[1],
                                 nextLine[2],
                                 nextLine[3],
                                 nextLine[4],
-                                nextLine[5],
-                                ""
-                        );
-                        importedData.add(person);
+                                nextLine[5]);
+                        importedData.add(student);
                     }
 
                     // Update TableView with imported data
@@ -342,18 +328,17 @@ public class DB_GUI_Controller implements Initializable {
         if (file != null) {
             try (CSVWriter writer = new CSVWriter(new FileWriter(file))) {
                 // Write CSV header
-                String[] header = {"ID", "FirstName", "LastName", "Department", "Major", "Email"};
+                String[] header = {"ID", "FirstName", "LastName", "Year", "Major", "Email"};
                 writer.writeNext(header);
 
                 // Write data to CSV
-                for (Person person : data) {
+                for (Student student : data) {
                     String[] rowData = {
-                            String.valueOf(person.getId()),
-                            person.getFirstName(),
-                            person.getLastName(),
-                            person.getDepartment(),
-                            person.getMajor(),
-                            person.getEmail()
+                            String.valueOf(student.getId()),
+                            student.getFirstName(),
+                            student.getLastName(),
+                            student.getMajor(),
+                            student.getEmail()
                     };
                     writer.writeNext(rowData);
                 }
@@ -382,6 +367,7 @@ public class DB_GUI_Controller implements Initializable {
         }
     }
 
+
     private void generatePdf(File file) throws IOException {
         PDDocument document = new PDDocument();
         PDPage page = new PDPage();
@@ -390,16 +376,35 @@ public class DB_GUI_Controller implements Initializable {
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
             contentStream.beginText();
-            contentStream.newLineAtOffset(50, 700);
-            contentStream.showText("Student Report by Major");
+            contentStream.newLineAtOffset(50, 750);
+            contentStream.showText("Course: " + DbConnectivityClass.getDbName()); // Display course name
             contentStream.newLineAtOffset(0, -20);
+            contentStream.showText("Student List for " + DbConnectivityClass.getDbName());
+            contentStream.newLineAtOffset(0, -15);
+            contentStream.showText("Total Students: " + data.size());
+            contentStream.newLineAtOffset(0, -15);
             contentStream.showText("--------------------------------------------------");
 
-            Map<String, Integer> majorCounts = countStudentsByMajor();
 
-            for (Map.Entry<String, Integer> entry : majorCounts.entrySet()) {
-                contentStream.newLineAtOffset(0, -15);
-                contentStream.showText(entry.getKey() + ": " + entry.getValue() + " students");
+            // Define column headers
+            String[] headers = {"ID", "FirstName", "LastName", "Year", "Major", "Email"};
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 10);
+            addRowToPDF(contentStream, headers);
+
+            // Reset font for student data
+            contentStream.setFont(PDType1Font.HELVETICA, 10);
+
+            // Add student data
+            for (Student student : data) {
+                String[] studentData = {
+                        String.valueOf(student.getId()),
+                        student.getFirstName(),
+                        student.getLastName(),
+                        student.getYear(),
+                        student.getMajor(),
+                        student.getEmail()
+                };
+                addRowToPDF(contentStream, studentData);
             }
 
             contentStream.endText();
@@ -409,11 +414,18 @@ public class DB_GUI_Controller implements Initializable {
         document.close();
     }
 
+    private void addRowToPDF(PDPageContentStream contentStream, String[] data) throws IOException {
+        contentStream.newLineAtOffset(0, -15);
+        contentStream.showText(String.join(" | ", data));
+    }
+
+
+
     private Map<String, Integer> countStudentsByMajor() {
         Map<String, Integer> majorCounts = new HashMap<>();
 
-        for (Person person : data) {
-            String major = person.getMajor();
+        for (Student student : data) {
+            String major = student.getMajor();
             majorCounts.put(major, majorCounts.getOrDefault(major, 0) + 1);
         }
 
@@ -438,14 +450,14 @@ public class DB_GUI_Controller implements Initializable {
     protected void clearForm() {
         first_name.setText("");
         last_name.setText("");
-        department.setText("");
         majorComboBox.setValue(null);
         email.setText("");
-        imageURL.setText("");
+        year.setText("");
     }
 
     @FXML
     protected void logOut(ActionEvent actionEvent) {
+        DbConnectivityClass.setDbName(null);
         try {
             Parent root = FXMLLoader.load(getClass().getResource("/view/login.fxml"));
             Scene scene = new Scene(root, 900, 600);
@@ -463,34 +475,20 @@ public class DB_GUI_Controller implements Initializable {
         System.exit(0);
     }
 
-    @FXML
-    protected void displayAbout() {
-        try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/about.fxml"));
-            Stage stage = new Stage();
-            Scene scene = new Scene(root, 600, 500);
-            stage.setScene(scene);
-            stage.showAndWait();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     @FXML
     protected void editRecord() {
-        Person p = tv.getSelectionModel().getSelectedItem();
+        Student p = tv.getSelectionModel().getSelectedItem();
         if (p != null) {
             int index = data.indexOf(p);
 
-            Person p2 = new Person(
+            Student p2 = new Student(
                     p.getId(),
                     first_name.getText(),
                     last_name.getText(),
-                    department.getText(),
                     majorComboBox.getValue().getDisplayName(),  // Use ComboBox instead of TextField
                     email.getText(),
-                    imageURL.getText()
+                    year.getText()
             );
 
             cnUtil.editUser(p.getId(), p2);
@@ -505,8 +503,9 @@ public class DB_GUI_Controller implements Initializable {
 
     @FXML
     protected void deleteRecord() {
-        Person p = tv.getSelectionModel().getSelectedItem();
+        Student p = tv.getSelectionModel().getSelectedItem();
         int index = data.indexOf(p);
+        if(index<0){return;}
         cnUtil.deleteRecord(p);
         data.remove(index);
         tv.getSelectionModel().select(index);
@@ -527,13 +526,11 @@ public class DB_GUI_Controller implements Initializable {
 
     @FXML
     protected void selectedItemTV(MouseEvent mouseEvent) {
-        Person p = tv.getSelectionModel().getSelectedItem();
+        Student p = tv.getSelectionModel().getSelectedItem();
         first_name.setText(p.getFirstName());
         last_name.setText(p.getLastName());
-        department.setText(p.getDepartment());
         major.setText(p.getMajor());
         email.setText(p.getEmail());
-        imageURL.setText(p.getImageURL());
     }
 
     public void lightTheme(ActionEvent actionEvent) {
@@ -594,7 +591,34 @@ public class DB_GUI_Controller implements Initializable {
     public enum Major {
         CS("Computer Science"),
         CPIS("Computer Information Systems"),
-        ENGLISH("English");
+        ENGLISH("English"),
+        BIO("Biology"),
+        CHEM("Chemistry"),
+        PSYCH("Psychology"),
+        MATH("Mathematics"),
+        PHYS("Physics"),
+        ECON("Economics"),
+        POLISCI("Political Science"),
+        HIST("History"),
+        SOC("Sociology"),
+        PHIL("Philosophy"),
+        MUSIC("Music"),
+        ART("Art"),
+        ENG("Engineering"),
+        NURS("Nursing"),
+        EDU("Education"),
+        BUS("Business"),
+        COMM("Communications"),
+        ENVSCI("Environmental Science"),
+        ANTHRO("Anthropology"),
+        THEATRE("Theatre"),
+        FILM("Film Studies"),
+        LANG("Languages"),
+        ARCH("Architecture"),
+        STAT("Statistics"),
+        PHARM("Pharmacy"),
+        KINE("Kinesiology"),
+        ACCT("Accounting");
 
         private final String displayName;
 

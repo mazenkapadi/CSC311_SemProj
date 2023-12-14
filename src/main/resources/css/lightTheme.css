@@ -1,5 +1,5 @@
 .db_btn {
-    -fx-background-color: #a73;
+    -fx-background-color: grey;
     -fx-cursor: hand;
     -fx-font-family: "Arial";
     -fx-font-size: 15px;
@@ -12,36 +12,37 @@
 }
 
 .left_pane {
-    -fx-background-color: #a73;
+    -fx-background-color: #B7B5E4;
     -fx-pref-width: 130px;
     -fx-pref-height: 600px;
 }
 
 .admin_section {
-    -fx-background-color: #999;
+    -fx-background-color: grey;
 }
 
 .table_columns {
-    -fx-background-color: white;
+    -fx-background-color: grey;
     -fx-text-fill: black;
 }
 
 
 .menu_bar {
-    -fx-background-color: #841;
+    -fx-background-color: black;
+    -fx-text-fill: white;
 }
 
 .anchor_pane {
-    -fx-background-color: #a73;
+    -fx-background-color: #B7B5E4;
 }
 
 .text_field_pane {
-    -fx-background-color: #79dc05;
+    -fx-background-color: #B7B5E4;
 
 }
 
 .image_view{
-    -fx-background-color: yellow;
+    -fx-background-color: #B7B5E4;
     -fx-border-color: black;
     -fx-border-width: 2;
 }
@@ -51,7 +52,7 @@
 
 .table-view .column-header,
 .table-view .column-header-background .filler {
-    -fx-background-color:  #999999;
+    -fx-background-color:  grey;
      -fx-text-fill: black;
 }
 .table-view .column-header .label{
@@ -63,14 +64,14 @@
    -fx-cell-size: 35;
   -fx-alignment: center-left;
   -fx-background-color: #FFFFFF;
-  -fx-border-color: #29292D;
+  -fx-border-color: grey;
   -fx-text-fill: black;
   -fx-alignment: CENTER_LEFT;
 
 }
 .table-row-cell:selected {
    -fx-background-color: whitesmoke;
-   -fx-text-background-color:  #33FF55;
+   -fx-text-background-color:  purple;
 
 
 }
@@ -91,7 +92,7 @@
 .table-view .scroll-bar:horizontal .track,
 .table-view .scroll-bar:vertical .track{
 	-fx-background-color: transparent;
-	-fx-border-color:derive( #FFFFFF,80%);
+	-fx-border-color:derive( #B7B5E4,80%);
 
 	-fx-background-radius: 2em;
 	-fx-border-radius:2em;
@@ -100,7 +101,7 @@
 /* The main scrollbar **thumb** CSS class which we drag every time (movable) */
 .table-view .scroll-bar:horizontal .thumb,
 .table-view .scroll-bar:vertical .thumb {
-    -fx-background-color:derive( #FFFFFF,90%);
+    -fx-background-color:derive( #B7B5E4,90%);
 	-fx-background-insets: 1, 0, 0;
 	-fx-background-radius: 2em;
 

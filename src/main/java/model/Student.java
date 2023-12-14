@@ -1,25 +1,21 @@
 package model;
 
-public class Person {
+public class Student {
     private Integer id;
     private String firstName;
     private String lastName;
-    private String department;
     private String major;
     private String email;
-    private String imageURL;
 
-    public Person() {
-    }
+    private String year;
 
-    public Person(Integer id, String firstName, String lastName, String department, String major, String email, String imageURL) {
+    public Student(Integer id, String firstName, String lastName, String major, String email, String year) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.department = department;
         this.major = major;
         this.email = email;
-        this.imageURL = imageURL;
+        this.year = year;
     }
 
     public String getEmail() {
@@ -62,31 +58,26 @@ public class Person {
         this.major = major;
     }
 
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
-    public String getImageURL() {
-        return imageURL;
-    }
-
-    public void setImageURL(String imageURL) {
-        this.imageURL = imageURL;
-    }
 
     @Override
     public String toString() {
-        return "Person{" +
+        return "Student{" +
                 "id=" + id +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
-                ", department='" + department + '\'' +
+                ", year='" + year + '\'' +
                 ", major='" + major + '\'' +
                 ", email='" + email + '\'' +
                 '}';
     }
+
+    public String getYear() {
+        return this.year;
+    }
+
+    public void setYear(String year) {
+        this.year = year;
+    }
+
 }
+        
